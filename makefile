@@ -1,5 +1,5 @@
 mysh: mysh.c
-	gcc -o mysh -Wall mysh.c
+	gcc -g -Wall -o mysh mysh.c
 
 .PHONY: all
 all: mysh
