@@ -18,24 +18,32 @@ void removenewline(char *s) {
 
 const char *cd = "cd ";
 const char *pwd = "pwd";
+const char *exitcommand = "exit";
 
 int main(int argc, char *argv[]) {
-	char buf[PATH_MAX];
-	if (read(STDIN_FILENO, buf, sizeof(buf)) <= 0) {
-		return 0;
-	}
-	removenewline(buf);
-
-	if (hasprefix(buf, cd)) {
-		char *path = buf + strlen(cd);
-		if (chdir(path)) {
-			printf("%s", strerror(errno));
+	while (true) {
+		char buf[PATH_MAX] = {0};
+		if (read(STDIN_FILENO, buf, sizeof(buf)) <= 0) {
+			return 0;
 		}
-	}
+		removenewline(buf);
 
-	if (strcmp(buf, pwd) == 0) {
-		char cwd[PATH_MAX];
-		getcwd(cwd, sizeof(cwd));
-		printf("%s", cwd);
+		if (hasprefix(buf, cd)) {
+			char *path = buf + strlen(cd);
+			if (chdir(path)) {
+				printf("%s\n", strerror(errno));
+			}
+		}
+
+		if (strcmp(buf, pwd) == 0) {
+			char cwd[PATH_MAX];
+			getcwd(cwd, sizeof(cwd));
+			printf("%s\n", cwd);
+		}
+
+		if (strcmp(buf, exitcommand) == 0) {
+			return 0;
+		}
+		fflush(stdout);
 	}
 }
