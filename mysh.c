@@ -28,7 +28,7 @@ void removenewline(char *s) {
 char **parseargs(char *s) {
 	char **args = calloc(sizeof(char *), 1);
 	if (args == NULL) {
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	size_t i = 0;
@@ -38,12 +38,12 @@ char **parseargs(char *s) {
 	while (buf != NULL) {
 		args = realloc(args, sizeof(char *) * (i + 2));
 		if (args == NULL) {
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		args[i] = calloc(sizeof(char), strlen(buf) + 1);
 		if (args[i] == NULL) {
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		strcpy(args[i], buf);
@@ -71,17 +71,17 @@ void callprogram(char *const *args) {
 	pid_t pid = fork();
 	if (pid < 0) {
 		perror("fork");
-		exit(1);
+		exit(EXIT_FAILURE);
 	} else if (pid == 0) {
 		if (execvp(args[0], args) == -1) {
 			perror(NULL);
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 
 	if (waitpid(pid, NULL, 0) == -1) {
 		perror("waitpid");
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -98,6 +98,8 @@ void translatepath(const char path[static PATH_MAX], char out[static PATH_MAX]) 
 
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[]) {
 	const char *cd = "cd ";
+	char *line = NULL;
+	size_t linesize = 0;
 
 	while (true) {
 		char cwd[PATH_MAX] = {0};
@@ -109,32 +111,34 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 		printf("%s$mysh> ", directorywithreplacement);
 		fflush(stdout);
 
-		char buf[PATH_MAX] = {0};
-		if (read(STDIN_FILENO, buf, sizeof(buf)) <= 0) {
-			return 0;
+		if (getline(&line, &linesize, stdin) == -1) {
+			perror("read");
+			break;
 		}
-		removenewline(buf);
+		removenewline(line);
 
-		if (buf[0] == '\0') {
+		if (line[0] == '\0') {
 			// Empty command
-		} else if (hasprefix(buf, cd)) {
+		} else if (hasprefix(line, cd)) {
 			// cd
-			char *path = buf + strlen(cd);
+			char *path = line + strlen(cd);
 			if (chdir(path)) {
 				perror(NULL);
 			}
-		} else if (strcmp(buf, "pwd") == 0) {
+		} else if (hasprefix(line, "pwd ")) {
 			// pwd
 			printf("%s\n", cwd);
-		} else if (strcmp(buf, "exit") == 0) {
+		} else if (strcmp(line, "exit") == 0) {
 			// exit
-			return 0;
+			break;
 		} else {
 			// Call program
-			char **args = parseargs(buf);
+			char **args = parseargs(line);
 			callprogram(args);
 			freeargs(args);
 		}
 		fflush(stderr);
 	}
+
+	free(line);
 }
