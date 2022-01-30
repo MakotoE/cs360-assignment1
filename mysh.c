@@ -96,11 +96,9 @@ void translatepath(const char path[static PATH_MAX], char out[static PATH_MAX]) 
 	}
 }
 
-const char *cd = "cd ";
-const char *pwd = "pwd";
-const char *exitcommand = "exit";
-
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[]) {
+	const char *cd = "cd ";
+	
 	while (true) {
 		char cwd[PATH_MAX] = {0};
 		getcwd(cwd, sizeof(cwd));
@@ -123,9 +121,9 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 			if (chdir(path)) {
 				perror(NULL);
 			}
-		} else if (strcmp(buf, pwd) == 0) {
+		} else if (strcmp(buf, "pwd") == 0) {
 			printf("%s\n", cwd);
-		} else if (strcmp(buf, exitcommand) == 0) {
+		} else if (strcmp(buf, "exit") == 0) {
 			return 0;
 		} else {
 			char **args = parseargs(buf);
