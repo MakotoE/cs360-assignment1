@@ -63,8 +63,8 @@ void freeargs(char **args) {
 	free(args);
 }
 
-// Calls command for given args, where args[0] is the file name.
-void callcommand(char *const *args) {
+// Calls program for given args, where args[0] is the file name.
+void callprogram(char *const *args) {
 	assert(args != NULL);
 	assert(args[0] != NULL);
 
@@ -98,7 +98,7 @@ void translatepath(const char path[static PATH_MAX], char out[static PATH_MAX]) 
 
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[]) {
 	const char *cd = "cd ";
-	
+
 	while (true) {
 		char cwd[PATH_MAX] = {0};
 		getcwd(cwd, sizeof(cwd));
@@ -116,18 +116,23 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 		removenewline(buf);
 
 		if (buf[0] == '\0') {
+			// Empty command
 		} else if (hasprefix(buf, cd)) {
+			// cd
 			char *path = buf + strlen(cd);
 			if (chdir(path)) {
 				perror(NULL);
 			}
 		} else if (strcmp(buf, "pwd") == 0) {
+			// pwd
 			printf("%s\n", cwd);
 		} else if (strcmp(buf, "exit") == 0) {
+			// exit
 			return 0;
 		} else {
+			// Call program
 			char **args = parseargs(buf);
-			callcommand(args);
+			callprogram(args);
 			freeargs(args);
 		}
 		fflush(stderr);
