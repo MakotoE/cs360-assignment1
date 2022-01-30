@@ -6,13 +6,13 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/wait.h>
+#include <pwd.h>
 
 bool hasprefix(const char *s, const char *prefix) {
 	return strncmp(s, prefix, strlen(prefix)) == 0;
 }
 
 void removenewline(char *s) {
-	assert(s != NULL);
 	size_t len = strlen(s);
 	if (*(s + len - 1) == '\n') {
 		*(s + len - 1) = '\0';
@@ -20,8 +20,6 @@ void removenewline(char *s) {
 }
 
 char **parseargs(char *s) {
-	assert(s != NULL);
-
 	char **args = calloc(sizeof(char *), 1);
 	if (args == NULL) {
 		exit(1);
@@ -52,14 +50,13 @@ char **parseargs(char *s) {
 }
 
 void freeargs(char **args) {
-	assert(args != NULL);
 	for (size_t i = 0; args[i] != NULL; ++i) {
 		free(args[i]);
 	}
 	free(args);
 }
 
-void callcommand(char **args) {
+void callcommand(char *const *args) {
 	assert(args != NULL);
 	assert(args[0] != NULL);
 
@@ -80,12 +77,31 @@ void callcommand(char **args) {
 	}
 }
 
+void translatepath(const char path[static PATH_MAX], char out[static PATH_MAX]) {
+	char *homedir = getpwuid(getuid())->pw_dir;
+	if (hasprefix(path, homedir)) {
+		out[0] = '~';
+		strcpy(out + 1, path + strlen(homedir));
+	} else {
+		strcpy(out, path);
+	}
+}
+
 const char *cd = "cd ";
 const char *pwd = "pwd";
 const char *exitcommand = "exit";
 
 int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[]) {
 	while (true) {
+		char cwd[PATH_MAX];
+		getcwd(cwd, sizeof(cwd));
+
+		char directorywithreplacement[PATH_MAX];
+		translatepath(cwd, directorywithreplacement);
+
+		printf("%s$mysh> ", directorywithreplacement);
+		fflush(stdout);
+
 		char buf[PATH_MAX] = {0};
 		if (read(STDIN_FILENO, buf, sizeof(buf)) <= 0) {
 			return 0;
@@ -97,11 +113,8 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 			char *path = buf + strlen(cd);
 			if (chdir(path)) {
 				perror("chdir");
-				return 1;
 			}
 		} else if (strcmp(buf, pwd) == 0) {
-			char cwd[PATH_MAX];
-			getcwd(cwd, sizeof(cwd));
 			printf("%s\n", cwd);
 		} else if (strcmp(buf, exitcommand) == 0) {
 			return 0;
@@ -110,7 +123,5 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 			callcommand(args);
 			freeargs(args);
 		}
-
-		fflush(stdout);
 	}
 }
