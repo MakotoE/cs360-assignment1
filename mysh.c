@@ -1,10 +1,8 @@
 #include <unistd.h>
-#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <linux/limits.h>
 #include <stdbool.h>
-#include <malloc.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -20,20 +18,34 @@ void removenewline(char *s) {
 	}
 }
 
-void parseargs(char *string, char **args) {
-	assert(args != NULL);
+char **parseargs(char *string) {
+	char **args = calloc(sizeof(char *), 1);
+	if (args == NULL) {
+		exit(1);
+	}
 
 	size_t i = 0;
 	char *saveptr = NULL;
 	char *buf = strtok_r(string, " ", &saveptr);
 
 	while (buf != NULL) {
-		args[i] = malloc(strlen(buf));
+		args = realloc(args, sizeof(char *) * (i + 2));
+		if (args == NULL) {
+			exit(1);
+		}
+
+		args[i] = calloc(sizeof(char), strlen(buf));
+		if (args[i] == NULL) {
+			exit(1);
+		}
+
 		strcpy(args[i], buf);
+		args[i + 1] = NULL;
 		++i;
 
 		buf = strtok_r(NULL, " ", &saveptr);
 	}
+	return args;
 }
 
 void freeargs(char **args) {
@@ -41,6 +53,7 @@ void freeargs(char **args) {
 	for (size_t i = 0; args[i] != NULL; ++i) {
 		free(args[i]);
 	}
+	free(args);
 }
 
 void callcommand(char **args) {
@@ -88,8 +101,7 @@ int main(int argc, char *argv[]) {
 		} else if (strcmp(buf, exitcommand) == 0) {
 			return 0;
 		} else {
-			char *args[100] = {0}; // TODO avoid overflow by allocating
-			parseargs(buf, args);
+			char **args = parseargs(buf);
 			callcommand(args);
 			freeargs(args);
 		}
