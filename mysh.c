@@ -5,33 +5,37 @@
 #include <linux/limits.h>
 #include <stdbool.h>
 
-bool hasprefix(const char* s, const char* prefix) {
+bool hasprefix(const char *s, const char *prefix) {
 	return strncmp(s, prefix, strlen(prefix)) == 0;
 }
 
-void removenewline(char* s) {
+void removenewline(char *s) {
 	size_t len = strlen(s);
 	if (*(s + len - 1) == '\n') {
 		*(s + len - 1) = '\0';
 	}
 }
 
-const char* cd = "cd ";
+const char *cd = "cd ";
+const char *pwd = "pwd";
 
-int main(int argc, char* argv[]) {
-//	char cwd[PATH_MAX];
-//	getcwd(cwd, sizeof(cwd));
-//	printf("%s", cwd);
-
+int main(int argc, char *argv[]) {
 	char buf[PATH_MAX];
-	read(STDIN_FILENO, buf, sizeof(buf));
-	printf("%s", buf);
+	if (read(STDIN_FILENO, buf, sizeof(buf)) <= 0) {
+		return 0;
+	}
+	removenewline(buf);
 
 	if (hasprefix(buf, cd)) {
-		char* path = buf + strlen(cd);
-		removenewline(path);
+		char *path = buf + strlen(cd);
 		if (chdir(path)) {
 			printf("%s", strerror(errno));
 		}
+	}
+
+	if (strcmp(buf, pwd) == 0) {
+		char cwd[PATH_MAX];
+		getcwd(cwd, sizeof(cwd));
+		printf("%s", cwd);
 	}
 }
