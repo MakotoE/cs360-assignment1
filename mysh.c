@@ -112,7 +112,7 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 		} else if (hasprefix(buf, cd)) {
 			char *path = buf + strlen(cd);
 			if (chdir(path)) {
-				perror("chdir");
+				perror(NULL);
 			}
 		} else if (strcmp(buf, pwd) == 0) {
 			printf("%s\n", cwd);
@@ -123,5 +123,6 @@ int main(__attribute__((unused)) int argc, __attribute__((unused)) char *argv[])
 			callcommand(args);
 			freeargs(args);
 		}
+		fflush(stderr);
 	}
 }
